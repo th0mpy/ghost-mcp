@@ -56,6 +56,8 @@ import { registerRoleTools } from "./tools/roles";
 registerRoleTools(server);
 import { registerWebhookTools } from "./tools/webhooks";
 registerWebhookTools(server);
+import { registerImageTools } from "./tools/images";
+registerImageTools(server);
 
 import { registerPrompts } from "./prompts";
 registerPrompts(server);

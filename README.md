@@ -1,150 +1,275 @@
 # Ghost MCP Server
 
-## ‼️ Important Notice: Python to TypeScript Migration
-I've completely rewritten the Ghost MCP Server from Python to TypeScript in this v0.1.0 release. This major change brings several benefits:
-
-- Simplified installation: Now available as an NPM package (@fanyangmeng/ghost-mcp)
-- Improved reliability: Uses the official @tryghost/admin-api client instead of custom implementation
-- Better maintainability: TypeScript provides type safety and better code organization
-- Streamlined configuration: Simple environment variable setup
-
-### Breaking Changes
-
-- Python dependencies are no longer required
-- Configuration method has changed (now using Node.js environment variables)
-- Docker deployment has been simplified
-- Different installation process (now using NPM)
-
-Please see the below updated documentation for details on migrating from the Python version. If you encounter any issues, feel free to open an issue on GitHub.
-
----
-
-A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
+A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces such as Claude Desktop and ChatGPT-compatible MCP clients. It uses the official `@tryghost/admin-api` client and exposes Ghost admin operations as MCP tools.
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
 ## Features
 
-- Secure Ghost Admin API requests with `@tryghost/admin-api`
-- Comprehensive entity access including posts, users, members, tiers, offers, and newsletters
-- Advanced search functionality with both fuzzy and exact matching options
-- Detailed, human-readable output for Ghost entities
-- Robust error handling using custom `GhostError` exceptions
-- Integrated logging support via MCP context for enhanced troubleshooting
+- Uses the official `@tryghost/admin-api` package
+- MCP tools for posts, users, members, tiers, offers, newsletters, invites, roles, tags, and webhooks
+- Image upload support for Ghost Admin API image endpoints
+- Create and update posts with `feature_image`, image alt text, captions, and excerpts
+- Supports image uploads from:
+  - a local file path
+  - a remote URL
+  - a base64-encoded payload
+- Simple environment-variable configuration
+- Stdio transport for easy MCP client integration
+
+## Installation
+
+```bash
+npm install
+npm run build
+```
+
+You can also run it directly with `npx` once published from your own fork/package.
+
+## Configuration
+
+Set these environment variables for the Ghost Admin API:
+
+- `GHOST_API_URL` — your Ghost site URL, such as `https://yourblog.com`
+- `GHOST_ADMIN_API_KEY` — a Ghost Admin API key
+- `GHOST_API_VERSION` — Ghost Admin API version, such as `v5.0`
 
 ## Usage
 
-To use this with MCP clients, for instance, Claude Desktop, add the following to your `claude_desktop_config.json`:
+Example Claude Desktop configuration:
+
 ```json
 {
   "mcpServers": {
-      "ghost-mcp": {
-        "command": "npx",
-        "args": ["-y", "@fanyangmeng/ghost-mcp"],
-        "env": {
-            "GHOST_API_URL": "https://yourblog.com",
-            "GHOST_ADMIN_API_KEY": "your_admin_api_key",
-            "GHOST_API_VERSION": "v5.0"
-        }
+    "ghost-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/build/server.js"],
+      "env": {
+        "GHOST_API_URL": "https://yourblog.com",
+        "GHOST_ADMIN_API_KEY": "your_admin_api_key",
+        "GHOST_API_VERSION": "v5.0"
       }
     }
+  }
 }
 ```
 
+If you publish your fork to npm, you can switch the command to `npx` and point it at your package name.
+
 ## Available Resources
 
-The following Ghost CMS resources are available through this MCP server:
+The following Ghost CMS resources are exposed:
 
-- **Posts**: Articles and content published on your Ghost site.
-- **Members**: Registered users and subscribers of your site.
-- **Newsletters**: Email newsletters managed and sent via Ghost.
-- **Offers**: Promotional offers and discounts for members.
-- **Invites**: Invitations for new users or staff to join your Ghost site.
-- **Roles**: User roles and permissions within the Ghost admin.
-- **Tags**: Organizational tags for posts and content.
-- **Tiers**: Subscription tiers and plans for members.
-- **Users**: Admin users and staff accounts.
-- **Webhooks**: Automated event notifications to external services.
+- **Posts**
+- **Members**
+- **Newsletters**
+- **Offers**
+- **Invites**
+- **Roles**
+- **Tags**
+- **Tiers**
+- **Users**
+- **Webhooks**
+- **Blog Info**
 
 ## Available Tools
 
-This MCP server exposes a comprehensive set of tools for managing your Ghost CMS via the Model Context Protocol. Each resource provides a set of operations, typically including browsing, reading, creating, editing, and deleting entities. Below is a summary of the available tools:
+## Posts
 
-### Posts
-- **Browse Posts**: List posts with optional filters, pagination, and ordering.
-- **Read Post**: Retrieve a post by ID or slug.
-- **Add Post**: Create a new post with title, content, and status.
-- **Edit Post**: Update an existing post by ID.
-- **Delete Post**: Remove a post by ID.
+- `posts_browse`
+- `posts_read`
+- `posts_add`
+- `posts_edit`
+- `posts_delete`
 
-### Members
-- **Browse Members**: List members with filters and pagination.
-- **Read Member**: Retrieve a member by ID or email.
-- **Add Member**: Create a new member.
-- **Edit Member**: Update member details.
-- **Delete Member**: Remove a member.
+### Post fields supported on create/update
 
-### Newsletters
-- **Browse Newsletters**: List newsletters.
-- **Read Newsletter**: Retrieve a newsletter by ID.
-- **Add Newsletter**: Create a new newsletter.
-- **Edit Newsletter**: Update newsletter details.
-- **Delete Newsletter**: Remove a newsletter.
+In addition to existing content fields, post create/update now supports:
 
-### Offers
-- **Browse Offers**: List offers.
-- **Read Offer**: Retrieve an offer by ID.
-- **Add Offer**: Create a new offer.
-- **Edit Offer**: Update offer details.
-- **Delete Offer**: Remove an offer.
+- `feature_image`
+- `feature_image_alt`
+- `feature_image_caption`
+- `custom_excerpt`
 
-### Invites
-- **Browse Invites**: List invites.
-- **Add Invite**: Create a new invite.
-- **Delete Invite**: Remove an invite.
+This makes it easy to upload an image first, then attach the returned URL as the post’s feature image.
 
-### Roles
-- **Browse Roles**: List roles.
-- **Read Role**: Retrieve a role by ID.
+## Images
 
-### Tags
-- **Browse Tags**: List tags.
-- **Read Tag**: Retrieve a tag by ID or slug.
-- **Add Tag**: Create a new tag.
-- **Edit Tag**: Update tag details.
-- **Delete Tag**: Remove a tag.
+The server now includes explicit image upload tools:
 
-### Tiers
-- **Browse Tiers**: List tiers.
-- **Read Tier**: Retrieve a tier by ID.
-- **Add Tier**: Create a new tier.
-- **Edit Tier**: Update tier details.
-- **Delete Tier**: Remove a tier.
+- `images_upload_from_path`
+- `images_upload_from_url`
+- `images_upload_from_base64`
 
-### Users
-- **Browse Users**: List users.
-- **Read User**: Retrieve a user by ID or slug.
-- **Edit User**: Update user details.
-- **Delete User**: Remove a user.
+### `images_upload_from_path`
 
-### Webhooks
-- **Browse Webhooks**: List webhooks.
-- **Add Webhook**: Create a new webhook.
-- **Delete Webhook**: Remove a webhook.
+Uploads an image already available on the same machine as the MCP server.
 
-> Each tool is accessible via the MCP protocol and can be invoked from compatible clients. For detailed parameter schemas and usage, see the source code in `src/tools/`.
+Parameters:
 
+- `file_path` — absolute or relative file path to the image
+- `purpose` — optional, one of `image`, `profile_image`, or `icon`
+- `ref` — optional Ghost reference string
+
+Example:
+
+```json
+{
+  "file_path": "/Users/chris/Pictures/hero.jpg",
+  "purpose": "image"
+}
+```
+
+### `images_upload_from_url`
+
+Downloads an image from a URL, stores it temporarily, uploads it to Ghost, then removes the temp file.
+
+Parameters:
+
+- `image_url` — remote image URL
+- `filename` — optional file name to use locally before upload
+- `purpose` — optional, one of `image`, `profile_image`, or `icon`
+- `ref` — optional Ghost reference string
+
+Example:
+
+```json
+{
+  "image_url": "https://example.com/images/hero.png",
+  "filename": "hero.png",
+  "purpose": "image"
+}
+```
+
+### `images_upload_from_base64`
+
+Accepts raw base64 image data or a data URL, writes a temporary file, uploads it to Ghost, then removes the temp file.
+
+Parameters:
+
+- `filename` — file name to use for the temporary upload file
+- `base64_data` — raw base64 string or full data URL
+- `mime_type` — optional MIME type, used when the filename has no extension
+- `purpose` — optional, one of `image`, `profile_image`, or `icon`
+- `ref` — optional Ghost reference string
+
+Example:
+
+```json
+{
+  "filename": "inline-image.png",
+  "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "mime_type": "image/png",
+  "purpose": "image"
+}
+```
+
+## Members
+
+- `members_browse`
+- `members_read`
+- `members_add`
+- `members_edit`
+- `members_delete`
+
+## Newsletters
+
+- `newsletters_browse`
+- `newsletters_read`
+- `newsletters_add`
+- `newsletters_edit`
+- `newsletters_delete`
+
+## Offers
+
+- `offers_browse`
+- `offers_read`
+- `offers_add`
+- `offers_edit`
+- `offers_delete`
+
+## Invites
+
+- `invites_browse`
+- `invites_add`
+- `invites_delete`
+
+## Roles
+
+- `roles_browse`
+- `roles_read`
+
+## Tags
+
+- `tags_browse`
+- `tags_read`
+- `tags_add`
+- `tags_edit`
+- `tags_delete`
+
+## Tiers
+
+- `tiers_browse`
+- `tiers_read`
+- `tiers_add`
+- `tiers_edit`
+- `tiers_delete`
+
+## Users
+
+- `users_browse`
+- `users_read`
+- `users_edit`
+- `users_delete`
+
+## Webhooks
+
+- `webhooks_browse`
+- `webhooks_add`
+- `webhooks_delete`
+
+## Suggested Image Workflow
+
+A typical image workflow for Ghost posts is:
+
+1. Upload the image with one of the `images_upload_*` tools.
+2. Copy the returned Ghost image URL.
+3. Call `posts_add` or `posts_edit` with that URL in `feature_image`.
+
+Example flow:
+
+```json
+{
+  "title": "My new post",
+  "html": "<p>Hello world</p>",
+  "status": "draft",
+  "feature_image": "https://yourblog.com/content/images/2026/04/hero.jpg",
+  "feature_image_alt": "A descriptive alt text",
+  "feature_image_caption": "Photo by Chris"
+}
+```
 
 ## Error Handling
 
-Ghost MCP Server employs a custom `GhostError` exception to handle API communication errors and processing issues. This ensures clear and descriptive error messages to assist with troubleshooting.
+Errors from Ghost or the MCP server are surfaced directly to the client. Common image-upload failure cases include:
+
+- invalid Ghost Admin API key
+- Ghost version/API version mismatch
+- unsupported file type
+- unreachable source URL for `images_upload_from_url`
+- missing file path for `images_upload_from_path`
+- a Ghost client version that does not expose `images.upload()`
+
+## Development Notes
+
+The image upload implementation uses temporary files for URL and base64 uploads because Ghost’s Admin API upload flow expects a file-based upload input.
 
 ## Contributing
 
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Create pull request
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a pull request
 
 ## License
 

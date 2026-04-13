@@ -19,6 +19,10 @@ const addParams = {
   html: z.string().optional(),
   lexical: z.string().optional(),
   status: z.string().optional(),
+  feature_image: z.string().optional(),
+  feature_image_alt: z.string().optional(),
+  feature_image_caption: z.string().optional(),
+  custom_excerpt: z.string().optional(),
 };
 const editParams = {
   id: z.string(),
@@ -26,6 +30,10 @@ const editParams = {
   html: z.string().optional(),
   lexical: z.string().optional(),
   status: z.string().optional(),
+  feature_image: z.string().optional(),
+  feature_image_alt: z.string().optional(),
+  feature_image_caption: z.string().optional(),
+  custom_excerpt: z.string().optional(),
   updated_at: z.string(),
 };
 const deleteParams = {
