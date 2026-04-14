@@ -15,14 +15,8 @@ import {
 
 // Create an MCP server instance
 const server = new McpServer({
-    name: "ghost-mcp-ts",
-    version: "1.0.0", // TODO: Get version from package.json
-    capabilities: {
-        resources: {}, // Capabilities will be enabled as handlers are registered
-        tools: {},
-        prompts: {},
-        logging: {} // Enable logging capability
-    }
+    name: "ghost-mcp",
+    version: "0.4.0"
 });
 
 // Register resource handlers
@@ -58,6 +52,10 @@ import { registerWebhookTools } from "./tools/webhooks";
 registerWebhookTools(server);
 import { registerImageTools } from "./tools/images";
 registerImageTools(server);
+import { registerPageTools } from "./tools/pages";
+registerPageTools(server);
+import { registerThemeTools } from "./tools/themes";
+registerThemeTools(server);
 
 import { registerPrompts } from "./prompts";
 registerPrompts(server);

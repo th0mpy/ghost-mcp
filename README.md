@@ -1,42 +1,48 @@
+> Current fork version: **0.4.0**
+
 # Ghost MCP Server
 
-A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces such as Claude Desktop and ChatGPT-compatible MCP clients. It uses the official `@tryghost/admin-api` client and exposes Ghost admin operations as MCP tools.
+A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM clients such as Claude Desktop and ChatGPT-compatible MCP clients.
+
+This fork uses the official `@tryghost/admin-api` client and exposes Ghost Admin API operations as MCP tools.
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
-## Features
+## What this fork adds
 
-- Uses the official `@tryghost/admin-api` package
-- MCP tools for posts, users, members, tiers, offers, newsletters, invites, roles, tags, and webhooks
-- Image upload support for Ghost Admin API image endpoints
-- Create and update posts with `feature_image`, image alt text, captions, and excerpts
-- Supports image uploads from:
-  - a local file path
-  - a remote URL
-  - a base64-encoded payload
-- Simple environment-variable configuration
-- Stdio transport for easy MCP client integration
+Compared with the original repository, this fork now includes:
+
+- image upload tools for Ghost Admin API uploads
+- richer post create/edit support
+- page tools
+- theme tools
+- `formats` and `include` support for post/page reads and browse operations
+- HTML-first helper workflows that upload images and replace references before sending content to Ghost
+- stricter post/page validation so callers do not send both `html` and `lexical` in the same request
+
+## Important API note
+
+This MCP server uses the **Ghost Admin API**, not the Ghost Content API.
+
+- **Content API** is read-only and intended for published content delivery
+- **Admin API** is used for authenticated create, edit, delete, image upload, page management, and theme management
 
 ## Installation
 
 ```bash
-npm install
+npm install --include=dev
 npm run build
 ```
 
-You can also run it directly with `npx` once published from your own fork/package.
-
 ## Configuration
 
-Set these environment variables for the Ghost Admin API:
+Set these environment variables:
 
-- `GHOST_API_URL` — your Ghost site URL, such as `https://yourblog.com`
-- `GHOST_ADMIN_API_KEY` — a Ghost Admin API key
-- `GHOST_API_VERSION` — Ghost Admin API version, such as `v5.0`
+- `GHOST_API_URL` — your Ghost admin/site URL, such as `https://yourblog.com`
+- `GHOST_ADMIN_API_KEY` — a Ghost Admin API key from a custom integration
+- `GHOST_API_VERSION` — Ghost Admin API version, such as `v5.0` or `v6.0`
 
-## Usage
-
-Example Claude Desktop configuration:
+## Example MCP config
 
 ```json
 {
@@ -54,223 +60,237 @@ Example Claude Desktop configuration:
 }
 ```
 
-If you publish your fork to npm, you can switch the command to `npx` and point it at your package name.
+## Supported tool groups
 
-## Available Resources
-
-The following Ghost CMS resources are exposed:
-
-- **Posts**
-- **Members**
-- **Newsletters**
-- **Offers**
-- **Invites**
-- **Roles**
-- **Tags**
-- **Tiers**
-- **Users**
-- **Webhooks**
-- **Blog Info**
-
-## Available Tools
-
-## Posts
+### Posts
 
 - `posts_browse`
 - `posts_read`
 - `posts_add`
 - `posts_edit`
+- `posts_edit_metadata`
+- `posts_replace_content_html`
+- `posts_replace_content_lexical`
 - `posts_delete`
+- `posts_add_html_with_uploaded_images`
+- `posts_edit_html_with_uploaded_images`
 
-### Post fields supported on create/update
+Posts now expose additional common Ghost fields including:
 
-In addition to existing content fields, post create/update now supports:
-
+- `tags`
+- `authors`
+- `featured`
+- `visibility`
+- `custom_template`
+- `canonical_url`
+- `codeinjection_head`
+- `codeinjection_foot`
+- `meta_title`
+- `meta_description`
+- `og_title`
+- `og_description`
+- `og_image`
+- `twitter_title`
+- `twitter_description`
+- `twitter_image`
+- `email_only`
+- `newsletter`
+- `email_segment`
 - `feature_image`
 - `feature_image_alt`
 - `feature_image_caption`
 - `custom_excerpt`
+- `published_at`
 
-This makes it easy to upload an image first, then attach the returned URL as the post’s feature image.
+### Pages
 
-## Images
+- `pages_browse`
+- `pages_read`
+- `pages_add`
+- `pages_edit`
+- `pages_edit_metadata`
+- `pages_replace_content_html`
+- `pages_replace_content_lexical`
+- `pages_delete`
 
-The server now includes explicit image upload tools:
+Pages support the same content pattern as posts, including `html` or `lexical`, `formats`, `include`, feature image fields, metadata fields, and HTML conversion using `source=html`.
+
+### Images
 
 - `images_upload_from_path`
 - `images_upload_from_url`
 - `images_upload_from_base64`
 
-### `images_upload_from_path`
+These map to Ghost image uploads and support:
 
-Uploads an image already available on the same machine as the MCP server.
+- `purpose`: `image`, `profile_image`, or `icon`
+- `ref`: optional reference string
 
-Parameters:
+### Themes
 
-- `file_path` — absolute or relative file path to the image
-- `purpose` — optional, one of `image`, `profile_image`, or `icon`
-- `ref` — optional Ghost reference string
+- `themes_browse`
+- `themes_upload`
+- `themes_activate`
 
-Example:
+`themes_upload` accepts a local zip file path and can optionally activate the uploaded theme.
 
-```json
-{
-  "file_path": "/Users/chris/Pictures/hero.jpg",
-  "purpose": "image"
-}
-```
+### Existing groups retained
 
-### `images_upload_from_url`
+- `members_*`
+- `users_*`
+- `tags_*`
+- `tiers_*`
+- `offers_*`
+- `newsletters_*`
+- `invites_*`
+- `roles_*`
+- `webhooks_*`
 
-Downloads an image from a URL, stores it temporarily, uploads it to Ghost, then removes the temp file.
+## Post and page editing rules
 
-Parameters:
+### Use top-level `id` and `updated_at`
 
-- `image_url` — remote image URL
-- `filename` — optional file name to use locally before upload
-- `purpose` — optional, one of `image`, `profile_image`, or `icon`
-- `ref` — optional Ghost reference string
+For `posts_edit` and `pages_edit`, `id` and `updated_at` must be top-level parameters.
 
-Example:
+### Do not send both `html` and `lexical`
 
-```json
-{
-  "image_url": "https://example.com/images/hero.png",
-  "filename": "hero.png",
-  "purpose": "image"
-}
-```
+This fork rejects requests that include both. Use one content mode per request.
 
-### `images_upload_from_base64`
+### Safe edit behavior for existing posts and pages
 
-Accepts raw base64 image data or a data URL, writes a temporary file, uploads it to Ghost, then removes the temp file.
+For existing content, this fork now treats body updates as destructive operations:
 
-Parameters:
+- `posts_edit` and `pages_edit` require `replace_entire_content=true` when `html` or `lexical` is provided
+- if the existing record appears to use a different content mode, you must also pass `allow_format_conversion=true`
+- for non-body changes, prefer `posts_edit_metadata` and `pages_edit_metadata`
 
-- `filename` — file name to use for the temporary upload file
-- `base64_data` — raw base64 string or full data URL
-- `mime_type` — optional MIME type, used when the filename has no extension
-- `purpose` — optional, one of `image`, `profile_image`, or `icon`
-- `ref` — optional Ghost reference string
+For image-heavy editing workflows, prefer HTML plus Ghost conversion via `source=html`. This is more reliable than trying to generate raw Lexical image nodes manually.
 
-Example:
+### Recommended tool choices
 
-```json
-{
-  "filename": "inline-image.png",
-  "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "mime_type": "image/png",
-  "purpose": "image"
-}
-```
+- use `posts_edit_metadata` or `pages_edit_metadata` for title, status, feature image, SEO fields, tags/authors, and other non-body changes
+- use `posts_replace_content_html` or `pages_replace_content_html` for explicit full-body HTML replacements
+- use `posts_replace_content_lexical` or `pages_replace_content_lexical` for explicit full-body Lexical replacements
+- use `posts_edit_html_with_uploaded_images` when you intentionally want to replace the full post body from HTML after uploading images
 
-## Members
+## HTML helper workflows for inline images
 
-- `members_browse`
-- `members_read`
-- `members_add`
-- `members_edit`
-- `members_delete`
+Two higher-level tools are included for HTML workflows:
 
-## Newsletters
+- `posts_add_html_with_uploaded_images`
+- `posts_edit_html_with_uploaded_images`
 
-- `newsletters_browse`
-- `newsletters_read`
-- `newsletters_add`
-- `newsletters_edit`
-- `newsletters_delete`
+These tools:
 
-## Offers
+1. upload referenced images to Ghost
+2. replace matching strings inside the HTML with the returned Ghost image URLs
+3. submit the final HTML to Ghost using `source=html`
 
-- `offers_browse`
-- `offers_read`
-- `offers_add`
-- `offers_edit`
-- `offers_delete`
+### Parameters
 
-## Invites
+Both helper tools take:
 
-- `invites_browse`
-- `invites_add`
-- `invites_delete`
+- `html` — required
+- `image_sources` — optional array of replacement/upload instructions
 
-## Roles
+Each `image_sources` item supports:
 
-- `roles_browse`
-- `roles_read`
+- `match` — required string to replace in the HTML
+- `file_path` — local image path, optional
+- `image_url` — remote image URL, optional
+- `base64_data` — base64 image data, optional
+- `filename` — required when using `base64_data`
+- `mime_type` — optional when using base64
+- `purpose` — optional Ghost image purpose
+- `ref` — optional Ghost image ref
 
-## Tags
+Only one upload source should be used per item.
 
-- `tags_browse`
-- `tags_read`
-- `tags_add`
-- `tags_edit`
-- `tags_delete`
-
-## Tiers
-
-- `tiers_browse`
-- `tiers_read`
-- `tiers_add`
-- `tiers_edit`
-- `tiers_delete`
-
-## Users
-
-- `users_browse`
-- `users_read`
-- `users_edit`
-- `users_delete`
-
-## Webhooks
-
-- `webhooks_browse`
-- `webhooks_add`
-- `webhooks_delete`
-
-## Suggested Image Workflow
-
-A typical image workflow for Ghost posts is:
-
-1. Upload the image with one of the `images_upload_*` tools.
-2. Copy the returned Ghost image URL.
-3. Call `posts_add` or `posts_edit` with that URL in `feature_image`.
-
-Example flow:
+### Example: create a post from HTML and local image references
 
 ```json
 {
-  "title": "My new post",
-  "html": "<p>Hello world</p>",
+  "title": "HTML image workflow",
+  "html": "<p>Hello</p><img src=\"LOCAL_HERO\" alt=\"Hero\">",
   "status": "draft",
-  "feature_image": "https://yourblog.com/content/images/2026/04/hero.jpg",
-  "feature_image_alt": "A descriptive alt text",
-  "feature_image_caption": "Photo by Chris"
+  "image_sources": [
+    {
+      "match": "LOCAL_HERO",
+      "file_path": "/Users/chris/Pictures/hero.jpg"
+    }
+  ]
 }
 ```
 
-## Error Handling
+### Example: edit a post from HTML and a remote image reference
 
-Errors from Ghost or the MCP server are surfaced directly to the client. Common image-upload failure cases include:
+```json
+{
+  "id": "682000000000000000000001",
+  "updated_at": "2026-04-12T22:14:31.000Z",
+  "html": "<p>Updated body</p><img src=\"REMOTE_IMAGE\">",
+  "save_revision": true,
+  "image_sources": [
+    {
+      "match": "REMOTE_IMAGE",
+      "image_url": "https://example.com/image.png",
+      "filename": "image.png"
+    }
+  ]
+}
+```
 
-- invalid Ghost Admin API key
-- Ghost version/API version mismatch
-- unsupported file type
-- unreachable source URL for `images_upload_from_url`
-- missing file path for `images_upload_from_path`
-- a Ghost client version that does not expose `images.upload()`
+## Recommended edit workflow
 
-## Development Notes
+For posts and pages:
 
-The image upload implementation uses temporary files for URL and base64 uploads because Ghost’s Admin API upload flow expects a file-based upload input.
+1. read the current record first
+2. copy the latest `id` and `updated_at`
+3. use metadata-only edit tools unless you truly intend to replace the body
+4. for body replacement, choose exactly one content mode: `html` or `lexical`
+5. for inline images, prefer the HTML helper tools
+6. if switching an existing record from one content mode to another, pass `allow_format_conversion=true` intentionally
 
-## Contributing
+## Notes on Ghost coverage
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Open a pull request
+This fork now exposes more of Ghost Admin than the original repository, including pages, themes, image uploads, broader post fields, and HTML-with-images helpers.
 
-## License
+It still should not be treated as a perfect 1:1 mirror of every Ghost Admin API field or endpoint. If you need another specific Ghost surface, extend the corresponding tool group in `src/tools/`.
 
-MIT
+## Destructive content replacement examples
+
+### Replace an existing post body with HTML
+
+```json
+{
+  "id": "682000000000000000000001",
+  "updated_at": "2026-04-12T22:14:31.000Z",
+  "html": "<p>This replaces the full post body.</p>",
+  "replace_entire_content": true,
+  "save_revision": true
+}
+```
+
+### Replace an existing post body with Lexical
+
+```json
+{
+  "id": "682000000000000000000001",
+  "updated_at": "2026-04-12T22:14:31.000Z",
+  "lexical": "{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}",
+  "replace_entire_content": true,
+  "save_revision": true
+}
+```
+
+### Metadata-only post edit
+
+```json
+{
+  "id": "682000000000000000000001",
+  "updated_at": "2026-04-12T22:14:31.000Z",
+  "title": "Updated title only",
+  "feature_image": "https://yourblog.com/content/images/2026/04/example.jpg",
+  "save_revision": true
+}
+```
