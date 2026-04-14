@@ -2,23 +2,24 @@
 
 # Ghost MCP Server
 
-A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM clients such as Claude Desktop and ChatGPT-compatible MCP clients.
+A Model Context Protocol (MCP) server for working with the **Ghost Admin API** from MCP clients such as Claude Desktop, Claude Code, and other local stdio-compatible clients.
 
-This fork uses the official `@tryghost/admin-api` client and exposes Ghost Admin API operations as MCP tools.
+This fork is based on the original `ghost-mcp` project and is cleaned up for publishing to GitHub at `https://github.com/th0mpy/ghost-mcp`.
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
 ## What this fork adds
 
-Compared with the original repository, this fork now includes:
+Compared with the original repository, this fork includes:
 
 - image upload tools for Ghost Admin API uploads
 - richer post create/edit support
 - page tools
 - theme tools
-- `formats` and `include` support for post/page reads and browse operations
+- `formats` and `include` support for post/page browse and read operations
 - HTML-first helper workflows that upload images and replace references before sending content to Ghost
 - stricter post/page validation so callers do not send both `html` and `lexical` in the same request
+- safer metadata-only editing tools for posts and pages
 
 ## Important API note
 
@@ -27,29 +28,42 @@ This MCP server uses the **Ghost Admin API**, not the Ghost Content API.
 - **Content API** is read-only and intended for published content delivery
 - **Admin API** is used for authenticated create, edit, delete, image upload, page management, and theme management
 
-## Installation
+## Current transport support
+
+This repository is the **v7/local stdio build**.
+
+It is intended for local MCP clients that launch a command, such as Claude Desktop or Claude Code.
+It does **not** expose a remote HTTP `/mcp` endpoint for ChatGPT connectors.
+
+## Requirements
+
+- Node.js 18+
+- npm
+- a Ghost site with a custom integration and Admin API key
+
+## Quick start
 
 ```bash
 npm install --include=dev
 npm run build
 ```
 
-## Configuration
-
-Set these environment variables:
+Create a `.env` file or provide these environment variables through your MCP client:
 
 - `GHOST_API_URL` — your Ghost admin/site URL, such as `https://yourblog.com`
 - `GHOST_ADMIN_API_KEY` — a Ghost Admin API key from a custom integration
-- `GHOST_API_VERSION` — Ghost Admin API version, such as `v5.0` or `v6.0`
+- `GHOST_API_VERSION` — optional, such as `v5.0` or `v6.0`
 
-## Example MCP config
+An example `.env.example` file is included in this repo.
+
+## Example Claude Desktop / local MCP config
 
 ```json
 {
   "mcpServers": {
     "ghost-mcp": {
       "command": "node",
-      "args": ["/absolute/path/to/build/server.js"],
+      "args": ["/absolute/path/to/ghost-mcp/build/server.js"],
       "env": {
         "GHOST_API_URL": "https://yourblog.com",
         "GHOST_ADMIN_API_KEY": "your_admin_api_key",
@@ -58,6 +72,12 @@ Set these environment variables:
     }
   }
 }
+```
+
+## Run locally
+
+```bash
+npm start
 ```
 
 ## Supported tool groups
@@ -75,7 +95,7 @@ Set these environment variables:
 - `posts_add_html_with_uploaded_images`
 - `posts_edit_html_with_uploaded_images`
 
-Posts now expose additional common Ghost fields including:
+Posts expose additional common Ghost fields including:
 
 - `tags`
 - `authors`
@@ -158,7 +178,7 @@ This fork rejects requests that include both. Use one content mode per request.
 
 ### Safe edit behavior for existing posts and pages
 
-For existing content, this fork now treats body updates as destructive operations:
+For existing content, this fork treats body updates as destructive operations:
 
 - `posts_edit` and `pages_edit` require `replace_entire_content=true` when `html` or `lexical` is provided
 - if the existing record appears to use a different content mode, you must also pass `allow_format_conversion=true`
@@ -222,75 +242,39 @@ Only one upload source should be used per item.
 }
 ```
 
-### Example: edit a post from HTML and a remote image reference
+## GitHub publishing checklist
 
-```json
-{
-  "id": "682000000000000000000001",
-  "updated_at": "2026-04-12T22:14:31.000Z",
-  "html": "<p>Updated body</p><img src=\"REMOTE_IMAGE\">",
-  "save_revision": true,
-  "image_sources": [
-    {
-      "match": "REMOTE_IMAGE",
-      "image_url": "https://example.com/image.png",
-      "filename": "image.png"
-    }
-  ]
-}
+Before you publish updates to GitHub:
+
+1. decide whether you want to keep the current license
+2. commit the repo without secrets
+3. verify `.env`, real API keys, and `node_modules/` are not included
+4. run a clean build:
+
+```bash
+rm -rf node_modules build
+npm install --include=dev
+npm run build
 ```
 
-## Recommended edit workflow
+## Suggested first commit workflow
 
-For posts and pages:
-
-1. read the current record first
-2. copy the latest `id` and `updated_at`
-3. use metadata-only edit tools unless you truly intend to replace the body
-4. for body replacement, choose exactly one content mode: `html` or `lexical`
-5. for inline images, prefer the HTML helper tools
-6. if switching an existing record from one content mode to another, pass `allow_format_conversion=true` intentionally
-
-## Notes on Ghost coverage
-
-This fork now exposes more of Ghost Admin than the original repository, including pages, themes, image uploads, broader post fields, and HTML-with-images helpers.
-
-It still should not be treated as a perfect 1:1 mirror of every Ghost Admin API field or endpoint. If you need another specific Ghost surface, extend the corresponding tool group in `src/tools/`.
-
-## Destructive content replacement examples
-
-### Replace an existing post body with HTML
-
-```json
-{
-  "id": "682000000000000000000001",
-  "updated_at": "2026-04-12T22:14:31.000Z",
-  "html": "<p>This replaces the full post body.</p>",
-  "replace_entire_content": true,
-  "save_revision": true
-}
+```bash
+git init
+git add .
+git commit -m "Initial GitHub-ready Ghost MCP fork"
 ```
 
-### Replace an existing post body with Lexical
+Push to the existing repo:
 
-```json
-{
-  "id": "682000000000000000000001",
-  "updated_at": "2026-04-12T22:14:31.000Z",
-  "lexical": "{"root":{"children":[],"direction":null,"format":"","indent":0,"type":"root","version":1}}",
-  "replace_entire_content": true,
-  "save_revision": true
-}
+```bash
+git branch -M main
+git remote add origin https://github.com/th0mpy/ghost-mcp.git
+git push -u origin main
 ```
 
-### Metadata-only post edit
+## Notes
 
-```json
-{
-  "id": "682000000000000000000001",
-  "updated_at": "2026-04-12T22:14:31.000Z",
-  "title": "Updated title only",
-  "feature_image": "https://yourblog.com/content/images/2026/04/example.jpg",
-  "save_revision": true
-}
-```
+- Ghost Admin API keys are sensitive. Keep them in environment variables, not in the repository.
+- This repo is intentionally focused on the local/stdin MCP use case.
+- If you later want ChatGPT connector support, you will need a remote HTTP MCP transport layer in addition to this build.

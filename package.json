@@ -1,35 +1,49 @@
 {
-    "name": "ghost-mcp",
-    "version": "0.4.0",
-    "description": "MCP server for using the Ghost API",
-    "main": "build/server.js",
-    "bin": {
-        "ghost-mcp": "build/server.js"
-    },
-    "files": [
-        "build/"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "start": "node build/server.js",
-        "prepare": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "keywords": [],
-    "author": "Chris Thompson fork",
-    "license": "ISC",
-    "type": "commonjs",
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.10.1",
-        "@tryghost/admin-api": "^1.13.13",
-        "axios": "^1.8.4",
-        "zod": "^3.24.3"
-    },
-    "devDependencies": {
-        "@types/node": "^22.14.1",
-        "typescript": "^5.8.3"
-    }
+  "name": "ghost-mcp",
+  "version": "0.4.0",
+  "description": "Model Context Protocol (MCP) server for the Ghost Admin API",
+  "main": "build/server.js",
+  "bin": {
+    "ghost-mcp": "build/server.js"
+  },
+  "files": [
+    "build/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/server.js",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "mcp",
+    "ghost",
+    "ghost-cms",
+    "model-context-protocol",
+    "claude"
+  ],
+  "author": "Chris Thompson",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@tryghost/admin-api": "^1.13.13",
+    "axios": "^1.8.4",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/th0mpy/ghost-mcp.git"
+  },
+  "homepage": "https://github.com/th0mpy/ghost-mcp",
+  "bugs": {
+    "url": "https://github.com/th0mpy/ghost-mcp/issues"
+  }
 }
